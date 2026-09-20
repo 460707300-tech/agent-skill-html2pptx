@@ -1,5 +1,10 @@
 # html2pptx — Agent Skill: HTML Slides → Pixel-Accurate, Fully Editable PPTX
 
+<p>
+  <a href="https://skills.sh/460707300-tech/agent-skill-html2pptx"><img alt="skills.sh" src="https://skills.sh/b/460707300-tech/agent-skill-html2pptx" height="24"></a>
+  <a href="https://github.com/460707300-tech/agent-skill-html2pptx/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" height="20"></a>
+</p>
+
 > Convert 1920×1080-style HTML slide decks into PowerPoint files that are **position-exact, fully editable, and keep videos playing** — measured from a real browser, not guessed from CSS.
 
 **Works with any coding agent** — Claude Code, Codex CLI, Cursor, Cline, Windsurf, or any assistant that can read a markdown playbook and run shell commands. The skill is just a markdown playbook plus standalone Python scripts; there is no runtime lock-in.
@@ -35,13 +40,21 @@ Typical html→pptx tools take one of two approaches: full-page screenshots (fas
 
 ### Install
 
+One command (works with 75+ agents — Claude Code, Codex, Cursor, Cline, …):
+
+```bash
+npx skills add 460707300-tech/agent-skill-html2pptx
+```
+
+Python dependencies:
+
 ```bash
 pip install playwright python-pptx pymupdf pywin32 pillow
 playwright install chromium
 # Microsoft PowerPoint (desktop) is required for the compare/export loop
 ```
 
-Install the skill: clone this repo to your agent's skill directory, e.g. `~/.claude/skills/html2pptx/` for Claude Code, or simply point your agent at `SKILL.md` — it is a plain markdown playbook.
+Or clone this repo to your agent's skill directory, e.g. `~/.claude/skills/html2pptx/` for Claude Code, or simply point your agent at `SKILL.md` — it is a plain markdown playbook.
 
 ### Usage
 
@@ -84,7 +97,7 @@ HTML decks ship their fonts as woff2; PPTX can only reference installed system f
 
 **转化能力**：文字混排→可编辑文本框｜图片→按比例嵌入｜mp4→内嵌且放映自动播放循环｜JS 轮播→转自动循环视频｜渐变卡片/金字塔/描边大字→形状绘制｜底纹遮罩→背景烘焙｜入场动画/光晕→按约定放弃。
 
-**安装**：`pip install playwright python-pptx pymupdf pywin32 pillow && playwright install chromium`（本机需装桌面版 PowerPoint 用于比对闭环），本仓库放入 agent 的 skills 目录即可。
+**安装**：一条命令装到任意 agent（Claude Code / Codex / Cursor / Cline 等）：`npx skills add 460707300-tech/agent-skill-html2pptx`；Python 依赖 `pip install playwright python-pptx pymupdf pywin32 pillow && playwright install chromium`（本机需装桌面版 PowerPoint 用于比对闭环），或直接把本仓库放入 agent 的 skills 目录。
 
 **用法**：目录布局见上方英文部分；对 Agent 说「把这份 HTML 幻灯片转成 pptx」，或手动逐步执行上方 7 条命令。`SKILL.md` 含 15 条实战踩坑清单，改渲染器前必读。
 
