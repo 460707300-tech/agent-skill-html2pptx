@@ -1,75 +1,94 @@
-# html2pptx — Claude Code Skill：HTML 幻灯片 → 可编辑 PPTX 忠实转化
+# html2pptx — Agent Skill: HTML Slides → Pixel-Accurate, Fully Editable PPTX
 
-> HTML slides → pixel-accurate, fully editable .pptx — measured, not guessed.
+> Convert 1920×1080-style HTML slide decks into PowerPoint files that are **position-exact, fully editable, and keep videos playing** — measured from a real browser, not guessed from CSS.
 
-把 1920×1080 风格的 HTML 演示文稿（网页版 PPT）转化为 **位置精准、文字可编辑、视频可播放** 的 PowerPoint 文件。
+**Works with any coding agent** — Claude Code, Codex CLI, Cursor, Cline, Windsurf, or any assistant that can read a markdown playbook and run shell commands. The skill is just a markdown playbook plus standalone Python scripts; there is no runtime lock-in.
 
-## 为什么不是"整页截图贴图"
+一个把 1920×1080 风格的 HTML 幻灯片转化为 **位置精准、文字可编辑、视频可播放** 的 PowerPoint 的 Agent Skill。（中文说明在下方 / Chinese guide below.）
 
-市面工具通常是两种思路：整页截图（快但全不可编辑）或规则解析 HTML（可编辑但 flex/grid 位置跑偏）。
-本 skill 走第三条路：
+---
 
-1. **实测代替解析** — playwright 让页面在 1920×1080 真渲染，逐元素抓 `getBoundingClientRect`，布局引擎的复杂度零手工计算
-2. **分层转化** — 网格底纹/渐变遮罩烘焙为背景图保视觉；文字/图片/视频/形状转原生对象保可编辑
-3. **渲染-比对闭环** — 每页生成后 PowerPoint→PDF→PNG 与原页并排比对，过关才进下一页
-4. **动态素材** — 演示视频内嵌且放映自动播放+循环；JS 图片轮播用 PowerPoint 编码成自动循环视频嵌回原位
+## English
 
-## 能转化什么
+### Why not "screenshot every page"
 
-| HTML 元素 | PPTX 呈现 |
+Typical html→pptx tools take one of two approaches: full-page screenshots (fast but nothing is editable) or rule-based HTML parsing (editable but flex/grid positions drift). This skill takes a third path:
+
+1. **Measure, don't parse** — Playwright renders the deck in a real Chromium at 1920×1080 and captures every element's `getBoundingClientRect`. The layout engine does the math.
+2. **Convert in layers** — decorative layers (grid patterns, gradient overlays, frames) are baked into one background image; text/images/videos/shapes become native PPTX objects, so text stays editable.
+3. **Render-compare loop** — every generated slide is exported (PowerPoint→PDF→PNG) and compared side-by-side with the original page. Nothing ships until it matches.
+4. **Keep media alive** — embedded mp4s auto-play and loop in presentation mode; JS image carousels are re-encoded into looping videos with PowerPoint's own encoder.
+
+### What gets converted
+
+| HTML element | PPTX result |
 |---|---|
-| 文字（含行内双色混排、字距、字重） | 可编辑文本框，多 run 保色 |
-| 图片（object-fit contain/cover） | 嵌入图片，比例不变形 |
-| mp4 视频 | 内嵌视频对象，**放映自动播放+循环** |
-| JS 图片轮播 | 转成自动循环的轮播视频（含字幕条） |
-| CSS 渐变色块/卡片/圆角 | 形状 + 渐变填充 |
-| clip-path 金字塔/梯形 | 自由多边形 |
-| 文字描边空心大字 | 文字描边（XML 注入） |
-| 网格底纹/渐变遮罩 | 烘焙为整页背景图 |
-| 入场动画/光晕/阴影 | 放弃（pptx 无法等价呈现） |
+| Text (inline mixed-color runs, letter-spacing, weights) | Editable text boxes, multi-run colors preserved |
+| Images (object-fit contain/cover) | Embedded pictures, aspect-correct |
+| mp4 videos | Embedded video objects, **auto-play + loop on slideshow** |
+| JS image carousels | Re-encoded as auto-looping carousel videos (captions baked in) |
+| Gradient cards / rounded boxes | Shapes with gradient fills |
+| clip-path pyramids / trapezoids | Freeform polygons |
+| Outlined (stroked) display type | Text outline via raw XML injection |
+| Grid patterns / gradient overlays | Baked full-page background image |
+| Entrance animations / glows / shadows | Dropped (no faithful pptx equivalent) |
 
-## 安装
+### Install
 
 ```bash
-# 依赖
 pip install playwright python-pptx pymupdf pywin32 pillow
 playwright install chromium
-# 本机需装有 Microsoft PowerPoint（COM 导出比对用）
+# Microsoft PowerPoint (desktop) is required for the compare/export loop
 ```
 
-安装 skill：把本仓库克隆到 `~/.claude/skills/html2pptx/`（Windows 为 `C:\Users\<你>\.claude\skills\html2pptx\`）。
+Install the skill: clone this repo to your agent's skill directory, e.g. `~/.claude/skills/html2pptx/` for Claude Code, or simply point your agent at `SKILL.md` — it is a plain markdown playbook.
 
-## 项目布局（转化时的工作目录）
+### Usage
+
+Working directory layout:
 
 ```
-<项目根>/
-├── 原html/            ← html 副本（pages/*.html + assets/），转化期间不再改动
-├── analysis/          ← 实测 JSON、背景图、比对图（中间产物）
-└── pptx输出/          ← 最终 pptx
+<project>/
+├── 原html/            ← copy of the HTML deck (pages/*.html + assets/), frozen afterwards
+├── analysis/          ← measured JSON, baked backgrounds, comparison images
+└── pptx输出/          ← final pptx
 ```
 
-## 使用（配合 Claude Code）
-
-对 Claude 说「把这份 html 幻灯片转成 pptx」即可，skill 会按 7 步流程走：
-实测提取 → 背景烘焙 → 生成 → 逐页比对 → 视频自动播放 → 轮播动态化 → 交付。
-
-也可以手动逐步执行（在项目根目录）：
+Ask your agent to "convert this HTML deck to pptx" and it follows the 7-step playbook in `SKILL.md`:
 
 ```bash
-python scripts/extract_elements.py 原html analysis      # 1. 逐元素实测 → analysis/pN.json
-python scripts/bake_bg.py 原html analysis               # 2. 烘焙背景
-python scripts/build_pptx.py .                          # 3. 生成（可带页码增量重建：. 3 7）
-python scripts/export_pdf.py "pptx输出/复赛PPT.pptx"    # 4. 渲染出图
-python scripts/compare.py 原html analysis               # 5. 上下并排比对图 cmp_pN.png
-python scripts/set_video_autoplay.py "pptx输出/复赛PPT.pptx"  # 6. 视频自动播放+循环
-python scripts/make_carousel_mp4.py .                   # 7.（可选）轮播图转动态视频
+python scripts/extract_elements.py 原html analysis      # 1. measure every element -> analysis/pN.json
+python scripts/bake_bg.py 原html analysis               # 2. bake decorative background
+python scripts/build_pptx.py .                          # 3. build (incremental: . 3 7)
+python scripts/export_pdf.py "pptx输出/复赛PPT.pptx"    # 4. render slides to PNG (via PDF)
+python scripts/compare.py 原html analysis               # 5. side-by-side comparison cmp_pN.png
+python scripts/set_video_autoplay.py "pptx输出/复赛PPT.pptx"  # 6. autoplay + loop all videos
+python scripts/make_carousel_mp4.py .                   # 7. (optional) carousels -> looping videos
 ```
 
-`SKILL.md` 里有完整的 15 条踩坑清单（字号换算 144px/in、flex 子项 blockify、COM 背景三步、防截字规则……），写渲染器前必读。
+`SKILL.md` also carries a 15-item pitfall list (the 144px/in font-scale constant, flex item blockification, COM background three-step, anti-clipping rules…), learned the hard way — read it before touching the renderer.
 
-## 字体说明
+### Fonts
 
-HTML 的字体（woff2）随网页打包，pptx 只能用系统字体回退（JetBrains Mono→Consolas、Noto Sans SC→微软雅黑、Archivo→Arial，可在 `build_pptx.py` 顶部改映射）。全 Windows 机器播放不会乱码；要 100% 一致可安装原字体并用 PowerPoint「嵌入字体」保存。
+HTML decks ship their fonts as woff2; PPTX can only reference installed system fonts, so the renderer maps JetBrains Mono→Consolas, Noto Sans SC→Microsoft YaHei, Archivo→Arial (editable at the top of `build_pptx.py`). Any Windows machine renders it correctly; for 100% fidelity install the original fonts and save with PowerPoint's embedded-fonts option.
+
+---
+
+## 中文说明
+
+把 1920×1080 风格的 HTML 幻灯片转化为**位置精准、文字可编辑、视频可播放**的 PowerPoint。
+
+**与常见工具的区别**：不做整页截图贴图（不可编辑），也不靠规则解析 CSS（flex 布局算不准）——用无头浏览器真渲染一遍，逐元素实测坐标，再分层转化：装饰层烘焙成背景图，文字/图片/视频转成原生 PPTX 对象；每页生成后走 PowerPoint→PDF→PNG 与原页并排比对，过关才算完成。
+
+**适用于任何能读 markdown、能跑命令的编程 Agent**（Claude Code / Codex CLI / Cursor / Cline / Windsurf 等）。
+
+**转化能力**：文字混排→可编辑文本框｜图片→按比例嵌入｜mp4→内嵌且放映自动播放循环｜JS 轮播→转自动循环视频｜渐变卡片/金字塔/描边大字→形状绘制｜底纹遮罩→背景烘焙｜入场动画/光晕→按约定放弃。
+
+**安装**：`pip install playwright python-pptx pymupdf pywin32 pillow && playwright install chromium`（本机需装桌面版 PowerPoint 用于比对闭环），本仓库放入 agent 的 skills 目录即可。
+
+**用法**：目录布局见上方英文部分；对 Agent 说「把这份 HTML 幻灯片转成 pptx」，或手动逐步执行上方 7 条命令。`SKILL.md` 含 15 条实战踩坑清单，改渲染器前必读。
+
+**字体**：HTML 字体随网页打包（woff2），pptx 只能引用系统字体，默认回退映射为 Consolas/微软雅黑/Arial（可改）。任意 Windows 机器（含导播系统）不会乱码；要 100% 一致可安装原字体并用 PowerPoint 嵌入字体保存。
 
 ## License
 
