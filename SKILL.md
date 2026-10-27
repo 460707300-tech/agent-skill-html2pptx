@@ -14,7 +14,16 @@ description: Convert HTML slide decks (1920×1080-style web presentations) into 
 ## Workflow (in order)
 
 ### Step 0: Prepare
-- Check dependencies: `python -c "import playwright, pptx, fitz, win32com.client, PIL"`; install what's missing (`playwright install chromium`; `pip install pywin32` for COM).
+- **Environment self-check first, install only what's missing** (a configured machine must pass with zero downloads — never re-download the browser when a probe passes):
+  ```bash
+  # Probe 1: playwright + its Chromium build actually launchable?
+  python -c "from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(); b.close(); p.stop(); print('OK')"
+  # Probe 2: the other libs
+  python -c "import pptx, fitz, win32com.client, PIL"
+  ```
+  Only if a probe fails: `pip install playwright python-pptx pymupdf pywin32 pillow` then `playwright install chromium`, and re-run the probe to verify.
+  - Playwright never uses the system Chrome — it manages its own pinned Chromium builds. Do not pin a version in instructions; adapt to the machine.
+  - If a Chromium cache already exists (`%LOCALAPPDATA%\ms-playwright\chromium-*` on Windows), prefer keeping the already-installed playwright version rather than upgrading (upgrading re-downloads hundreds of MB).
 - Microsoft PowerPoint (desktop) must be installed — the compare/export loop drives it via COM.
 - Check installed fonts (`ls C:/Windows/Fonts`) and set the font mapping at the top of `build_pptx.py` (`FONT_MONO/FONT_CN/FONT_LAT`).
 - Create the working layout:
