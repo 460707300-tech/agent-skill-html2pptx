@@ -46,13 +46,22 @@ One command (works with 75+ agents — Claude Code, Codex, Cursor, Cline, …):
 npx skills add 460707300-tech/agent-skill-html2pptx
 ```
 
-Python dependencies:
+Python dependencies — **self-check first, install only what's missing** (an already-configured machine should pass with zero downloads):
 
 ```bash
+# 1. Probe (touch nothing): if this prints OK, everything is ready — skip to done
+python -c "from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(); b.close(); p.stop(); print('OK')"
+python -c "import pptx, fitz, win32com.client, PIL"
+
+# 2. Only if a probe failed:
 pip install playwright python-pptx pymupdf pywin32 pillow
 playwright install chromium
-# Microsoft PowerPoint (desktop) is required for the compare/export loop
 ```
+
+Tips:
+- Microsoft PowerPoint (desktop) is required for the compare/export loop.
+- If your machine already has a Playwright Chromium cache (`%LOCALAPPDATA%\ms-playwright\chromium-*`), prefer keeping the already-installed playwright version (`pip show playwright`) over upgrading — a newer playwright pins a newer browser build and would re-download hundreds of MB.
+- Playwright does not use your system Chrome; it manages its own Chromium builds. A fresh machine always needs step 2 once.
 
 Or clone this repo to your agent's skill directory, e.g. `~/.claude/skills/html2pptx/` for Claude Code, or simply point your agent at `SKILL.md` — it is a plain markdown playbook.
 
@@ -97,7 +106,16 @@ HTML decks ship their fonts as woff2; PPTX can only reference installed system f
 
 **转化能力**：文字混排→可编辑文本框｜图片→按比例嵌入｜mp4→内嵌且放映自动播放循环｜JS 轮播→转自动循环视频｜渐变卡片/金字塔/描边大字→形状绘制｜底纹遮罩→背景烘焙｜入场动画/光晕→按约定放弃。
 
-**安装**：一条命令装到任意 agent（Claude Code / Codex / Cursor / Cline 等）：`npx skills add 460707300-tech/agent-skill-html2pptx`；Python 依赖 `pip install playwright python-pptx pymupdf pywin32 pillow && playwright install chromium`（本机需装桌面版 PowerPoint 用于比对闭环），或直接把本仓库放入 agent 的 skills 目录。
+**安装**：一条命令装到任意 agent（Claude Code / Codex / Cursor / Cline 等）：`npx skills add 460707300-tech/agent-skill-html2pptx`。Python 依赖**先自检、缺啥装啥**（已配置好的机器零下载直接过）：
+
+```bash
+# 自检：输出 OK 就说明环境齐了，什么都不用装
+python -c "from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(); b.close(); p.stop(); print('OK')"
+python -c "import pptx, fitz, win32com.client, PIL"
+# 某条失败才执行：pip install playwright python-pptx pymupdf pywin32 pillow && playwright install chromium
+```
+
+注意：Playwright 不使用系统 Chrome，它管理自己的 Chromium 内核；本机 `%LOCALAPPDATA%\ms-playwright\` 已有缓存内核时，沿用已装的 playwright 版本即可，别升级（升级会重下几百 MB 内核）。本机需装桌面版 PowerPoint 用于比对闭环；或直接把本仓库放入 agent 的 skills 目录。
 
 **用法**：目录布局见上方英文部分；对 Agent 说「把这份 HTML 幻灯片转成 pptx」，或手动逐步执行上方 7 条命令。`SKILL.md` 含 15 条实战踩坑清单，改渲染器前必读。
 
