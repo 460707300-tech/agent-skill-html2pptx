@@ -552,21 +552,26 @@ def make_poster(video_path):
     out = os.path.join(TMP, key)
     if os.path.exists(out): return out
     try:
+        import urllib.parse
         from playwright.sync_api import sync_playwright
+        # 路径必须 percent-encode（中文目录 GBK/UTF-8 混写会让 file:// 指到不存在的文件 → MEDIA_ELEMENT_ERROR）
         html = ('<body style="margin:0;background:#0D1319"><video id=v style="display:block" src="file:///' +
-                video_path.replace('\\', '/') + '" muted></video></body>')
+                urllib.parse.quote(video_path.replace('\\', '/')) + '" muted preload="auto"></video></body>')
         tmp = os.path.join(TMP, '_v.html')
-        open(tmp, 'w').write(html)
+        open(tmp, 'w', encoding='utf-8').write(html)
         with sync_playwright() as pw:
             b = pw.chromium.launch(args=['--allow-file-access-from-files', '--autoplay-policy=no-user-gesture-required'])
             pg = b.new_page(viewport={'width': 1280, 'height': 720})
             pg.goto('file:///' + tmp.replace('\\', '/'))
+            # 必须等元数据和首帧就绪，否则 videoWidth=0 → 元素零尺寸 → 截图超时
+            pg.wait_for_function("() => { const v = document.getElementById('v'); return v.readyState >= 2 && v.videoWidth > 0; }", timeout=20000)
+            pg.evaluate("() => { const v = document.getElementById('v'); v.pause(); v.autoplay = false; v.loop = false; }")
             vw, vh = pg.evaluate("() => { const v = document.getElementById('v'); return [v.videoWidth, v.videoHeight]; }")
             pg.evaluate("() => { const v = document.getElementById('v'); v.style.width = v.videoWidth + 'px'; v.style.height = v.videoHeight + 'px'; }")
             pg.set_viewport_size({'width': max(int(vw), 320), 'height': max(int(vh), 180)})
-            pg.evaluate("document.getElementById('v').currentTime = 0.5")
-            pg.wait_for_timeout(800)
-            pg.locator('video').screenshot(path=out)
+            pg.evaluate("() => new Promise(r => { const v = document.getElementById('v'); v.addEventListener('seeked', () => r(1), {once: true}); v.currentTime = 0.5; })")
+            pg.wait_for_timeout(200)
+            pg.locator('video').screenshot(path=out, timeout=15000)
             b.close()
         return out
     except Exception as e:
@@ -574,7 +579,8 @@ def make_poster(video_path):
         return None
 
 def main():
-    pages = [int(a) for a in _args] or list(range(1, 17))
+    _np = len([f for f in os.listdir(A) if re.match(r'p\d+\.json$', f)]) or 16
+    pages = [int(a) for a in _args] or list(range(1, _np + 1))
     prs = Presentation()
     prs.slide_width = px(1920)
     prs.slide_height = px(1080)
