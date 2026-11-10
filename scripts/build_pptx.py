@@ -486,7 +486,7 @@ def build_page(prs, n):
                                         poster_frame_image=poster, mime_type='video/mp4')
             adj = video_round_adj(el)
             if adj is not None:
-                round_movie_corners(mv, adj)  # 原页视频带圆角 → 弧边还原（竞品靠截帧图才有的效果）
+                round_movie_corners(mv, adj)  # 原页视频带圆角 → 弧边还原，视频保持可播放
         elif tag == 'svg':
             continue  # 子形状单独处理
         elif tag.startswith('svg:'):
