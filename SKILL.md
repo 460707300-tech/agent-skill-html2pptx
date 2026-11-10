@@ -58,7 +58,7 @@ The generic renderer already handles: text runs / images (contain & cover math) 
 python scripts/export_pdf.py "pptx-out/deck.pptx"
 python scripts/compare.py html-deck analysis [pages...]
 ```
-COM saves PDF first (**never export PNG via SaveAs — text renders fat on high-DPI machines**), PyMuPDF rasterizes at 1920px, `compare.py` writes `analysis/cmp_pN.png` (top = original HTML screenshot, bottom = PPTX render). Read each comparison and check: completeness / geometry / image-vs-video distinction / no clipped or overlapping text. Fix `build_pptx.py`, rebuild the page, re-compare.
+COM saves PDF first (**never export PNG via SaveAs — text renders fat on high-DPI machines**), PyMuPDF rasterizes at 1920px, `compare.py` writes `analysis/cmp_pN.png` (top = original HTML screenshot, bottom = PPTX render). Read each comparison and check: completeness / geometry / image-vs-video distinction / no clipped or overlapping text / **media decorative clipping matches (rounded corners, overflow clipping on videos & images — look at the four corners of every media box, not just the body)**. Fix `build_pptx.py`, rebuild the page, re-compare.
 
 ### Step 5: Video autoplay post-process → `set_video_autoplay.py`
 ```bash
@@ -89,6 +89,7 @@ Final audit (page count / video count / file size) → update `WORKLOG.md` → r
 13. `Presentation.CreateVideo` always outputs 16:9; setting a slide background via COM requires `slide.FollowMasterBackground = False` → `Fill.Solid()` → `ForeColor.RGB` (order matters or it stays white); poster frames: size the `<video>` element by videoWidth/videoHeight before screenshotting or you get white bars.
 14. Terminal GBK mojibake is display-only; files are UTF-8. Don't "fix" files because the terminal looks wrong.
 15. Report before fixing: when the client reports a bug, analyze root cause and list the fix plan first; fixes you discover yourself get reported after the fact.
+16. **Anything the original page has that the build does not implement is still a bug.** The builder only converts what past jobs taught it; the compare loop is the safety net, but only if you treat every visible difference as one — including small decorative ones (rounded corners on media, overflow clipping). "Too small to see in the scaled comparison" is not a pass reason; zoom in on corners.
 
 ## Fonts (put this in the delivery note)
 
