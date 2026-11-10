@@ -31,6 +31,7 @@ Typical html→pptx tools take one of two approaches: full-page screenshots (fas
 | Text (inline mixed-color runs, letter-spacing, weights) | Editable text boxes, multi-run colors preserved |
 | Images (object-fit contain/cover) | Embedded pictures, aspect-correct |
 | mp4 videos | Embedded video objects, **auto-play + loop on slideshow** |
+| Rounded/clip-corners on videos & images | Corner clipping preserved (videos stay playable — native roundRect geometry, not a screenshot) |
 | JS image carousels | Re-encoded as auto-looping carousel videos (captions baked in) |
 | Gradient cards / rounded boxes | Shapes with gradient fills |
 | clip-path pyramids / trapezoids | Freeform polygons |
