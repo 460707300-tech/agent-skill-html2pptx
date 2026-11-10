@@ -587,7 +587,14 @@ def main():
     for n in pages:
         build_page(prs, n)
         print('P%d built' % n)
-    out = os.path.join(OUTDIR, '复赛PPT.pptx')
+    # 输出名取 deck 标题（p1.json 顶部记录的 document.title），取不到就用项目目录名
+    try:
+        _title = json.load(open(os.path.join(A, 'p1.json'), encoding='utf-8')).get('slide') or ''
+    except Exception:
+        _title = ''
+    _title = _title.split('·')[0].strip() or os.path.basename(os.path.abspath(ROOT)) or 'deck'
+    _title = re.sub(r'[\\/:*?"<>|]', '', _title) or 'deck'
+    out = os.path.join(OUTDIR, _title + '.pptx')
     prs.save(out)
     print('saved:', out)
 
