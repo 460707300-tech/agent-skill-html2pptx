@@ -82,7 +82,20 @@ JS = r"""
         w: Math.round(r.width*10)/10, h: Math.round(r.height*10)/10, z: cs.zIndex,
       };
       if (isImg) { item.src = el.getAttribute('src'); item.fit = cs.objectFit; }
-      if (isVideo) { item.src = el.getAttribute('src'); }
+      if (isVideo) {
+        item.src = el.getAttribute('src');
+        // 圆角常做在父容器（overflow:hidden + borderRadius，圆角视频框的标配写法），video 自身是 0px
+        let vr = cs.borderRadius;
+        if (!parseFloat(vr)) {
+          let p = el.parentElement;
+          while (p && p !== document.body) {
+            const pcs = getComputedStyle(p);
+            if (parseFloat(pcs.borderRadius) > 0 && (pcs.overflow === 'hidden' || pcs.overflowX === 'hidden' || pcs.overflowY === 'hidden')) { vr = pcs.borderRadius; break; }
+            p = p.parentElement;
+          }
+        }
+        item.radius = vr;
+      }
       if (hasRuns) { item.runs = runs.filter(s => !s.br || runs.length > 1); item.align = cs.textAlign;
                      item.pad = [cs.paddingLeft, cs.paddingTop, cs.paddingRight, cs.paddingBottom];
                      // 用回退字体实测文字总宽（pptx 里 Consolas/雅黑 比 JetBrains Mono/Noto 宽）
@@ -105,8 +118,8 @@ JS = r"""
           if (w > 0) item.borderSides[s.toLowerCase()] = { w: w, color: cs['border'+s+'Color'] };
         }
       }
-      // radius 不随 hasBorder：圆角视频/图片常常无描边，漏采会导致 build 丢弧边
-      if (hasBorder || isVideo || isImg) item.radius = cs.borderRadius;
+      // radius 不随 hasBorder：圆角图片常常无描边，漏采会导致 build 丢弧边（video 已在上面单独处理，含父容器继承）
+      if (hasBorder || isImg) item.radius = cs.borderRadius;
       if (isSvg) item.svgBox = true;
       results.push(item);
     }
@@ -153,7 +166,7 @@ JS = r"""
 }
 """
 
-pages = ['p%d.html' % i for i in range(1, 17)]
+pages = sorted(f for f in os.listdir(os.path.join(BASE, 'pages')) if f.endswith('.html'))
 with sync_playwright() as pw:
     browser = pw.chromium.launch()
     page = browser.new_page(viewport={'width': 1920, 'height': 1080})
