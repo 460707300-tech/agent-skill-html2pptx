@@ -104,8 +104,9 @@ JS = r"""
           const w = parseFloat(cs['border'+s+'Width']);
           if (w > 0) item.borderSides[s.toLowerCase()] = { w: w, color: cs['border'+s+'Color'] };
         }
-        item.radius = cs.borderRadius;
       }
+      // radius 不随 hasBorder：圆角视频/图片常常无描边，漏采会导致 build 丢弧边
+      if (hasBorder || isVideo || isImg) item.radius = cs.borderRadius;
       if (isSvg) item.svgBox = true;
       results.push(item);
     }
