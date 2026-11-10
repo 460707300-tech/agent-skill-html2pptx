@@ -25,7 +25,11 @@ def shot_html(n):
         b.close()
     return out
 
-_pages = [int(a) for a in _sys.argv[3:]] or list(range(1, 17))
+import re as _re
+if len(_sys.argv) > 3:
+    _pages = [int(a) for a in _sys.argv[3:]]
+else:
+    _pages = sorted(int(_m.group(1)) for f in os.listdir(P) if (_m := _re.match(r'p(\d+)\.png$', f)))
 for n in _pages:
     left = Image.open(shot_html(n)).convert('RGB').resize((1280, 720))
     right = Image.open(os.path.join(A, 'pdf_png', 'p%d.png' % n)).convert('RGB').resize((1280, 720))
