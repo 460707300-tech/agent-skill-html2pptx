@@ -38,6 +38,40 @@ def map_family(f):
     if 'Archivo' in f: return FONT_LAT
     return FONT_CN
 
+def video_round_adj(el):
+    """视频圆角 → roundRect adj 值（0-50000）。无圆角/解析不了返回 None。"""
+    raw = (el.get('radius') or '').strip()
+    if not raw:
+        return None
+    try:
+        if raw.endswith('%'):
+            adj = float(raw.rstrip('%')) / 100 * 100000
+        else:
+            m = re.match(r'([\d.]+)px', raw)
+            if not m:
+                return None
+            adj = float(m.group(1)) / max(1.0, min(el['w'], el['h'])) * 100000
+    except ValueError:
+        return None
+    if adj < 2000:  # <2% 视觉不明显，忽略
+        return None
+    return int(min(adj, 50000))
+
+def round_movie_corners(mv, adj):
+    """视频形状 prstGeom 注入 roundRect（= PowerPoint「视频格式→圆角矩形」的 XML 等价物），播放不受影响。"""
+    spPr = mv._element.spPr
+    geom = spPr.find(qn('a:prstGeom'))
+    if geom is None:
+        return
+    geom.set('prst', 'roundRect')
+    av = geom.find(qn('a:avLst'))
+    if av is None:
+        av = geom.makeelement(qn('a:avLst'), {})
+        geom.append(av)
+    for gd in list(av):
+        av.remove(gd)
+    av.append(av.makeelement(qn('a:gd'), {'name': 'adj', 'fmla': 'val %d' % adj}))
+
 def parse_color(s):
     """'rgb(a,b,c)' / 'rgba(a,b,c,a)' / '#xxx' -> (RGBColor, alpha|None)"""
     if not s: return None, None
@@ -450,6 +484,9 @@ def build_page(prs, n):
             poster = make_poster(vsrc)
             mv = slide.shapes.add_movie(vsrc, px(el['x']), px(el['y']), px(el['w']), px(el['h']),
                                         poster_frame_image=poster, mime_type='video/mp4')
+            adj = video_round_adj(el)
+            if adj is not None:
+                round_movie_corners(mv, adj)  # 原页视频带圆角 → 弧边还原（竞品靠截帧图才有的效果）
         elif tag == 'svg':
             continue  # 子形状单独处理
         elif tag.startswith('svg:'):
